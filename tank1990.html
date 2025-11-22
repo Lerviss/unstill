@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank 1990 - Classic Arcade Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5em;
+            margin-top: 20px;
+        }
+
+        .game-wrapper {
+            position: relative;
+            background: #000;
+            border: 5px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        canvas {
+            display: block;
+            background: #1a1a1a;
+        }
+
+        .controls {
+            color: #fff;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            line-height: 1.8;
+        }
+
+        .controls h2 {
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .control-item {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .key {
+            background: #333;
+            color: #0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 15px 20px;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .hud-item {
+            display: flex;
+            gap: 10px;
+        }
+
+        .game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            gap: 20px;
+        }
+
+        .game-over-overlay.show {
+            display: flex;
+        }
+
+        .game-over-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff4444;
+            text-shadow: 2px 2px 4px #000;
+            animation: pulse 0.5s infinite;
+        }
+
+        .game-stats {
+            color: #00ff00;
+            font-size: 24px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .game-stats div {
+            margin: 8px 0;
+        }
+
+        .restart-btn {
+            padding: 12px 30px;
+            font-size: 20px;
+            background: #00ff00;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .restart-btn:hover {
+            background: #33ff33;
+            transform: scale(1.05);
+        }
+
+        .start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 999;
+            gap: 20px;
+        }
+
+        .start-overlay.hidden {
+            display: none;
+        }
+
+        .start-text {
+            font-size: 40px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 2px 2px 4px #000;
+            animation: blink 0.7s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+                margin-top: 10px;
+            }
+
+            .controls {
+                max-width: 95%;
+                padding: 15px;
+                font-size: 12px;
+            }
+
+            .control-item {
+                font-size: 12px;
+            }
+
+            .hud {
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .game-over-text {
+                font-size: 32px;
+            }
+
+            .game-stats {
+                font-size: 16px;
+            }
+
+            .restart-btn {
+                padding: 10px 20px;
+                font-size: 16px;
+            }
+
+            canvas {
+                max-width: 100vw;
+                max-height: 80vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 TANK 1990 🎮</h1>
+        <div class="game-wrapper">
+            <div class="hud">
+                <div class="hud-item">
+                    <span>SCORE:</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="hud-item">
+                    <span>LIVES:</span>
+                    <span id="lives">3</span>
+                </div>
+                <div class="hud-item">
+                    <span>LEVEL:</span>
+                    <span id="level">1</span>
+                </div>
+                <div class="hud-item">
+                    <span>ENEMIES:</span>
+                    <span id="enemies">0</span>
+                </div>
+            </div>
+            <canvas id="gameCanvas"></canvas>
+            <div class="start-overlay" id="startOverlay">
+                <div class="start-text">TANK 1990</div>
+                <div style="color: #00ff00; font-size: 20px;">Press SPACEBAR or CLICK to Start</div>
+            </div>
+            <div class="game-over-overlay" id="gameOverOverlay">
+                <div class="game-over-text">GAME OVER</div>
+                <div class="game-stats">
+                    <div>FINAL SCORE: <span id="finalScore">0</span></div>
+                    <div>ENEMIES KILLED: <span id="enemiesKilled">0</span></div>
+                </div>
+                <button class="restart-btn" onclick="location.reload()">Restart Game</button>
+            </div>
+        </div>
+        <div class="controls">
+            <h2>How to Play</h2>
+            <div class="control-item">
+                <span class="key">↑↓←→</span> or <span class="key">WASD</span> - Move your tank
+            </div>
+            <div class="control-item">
+                <span class="key">SPACE</span> or <span class="key">CLICK</span> - Fire bullets
+            </div>
+            <div class="control-item">
+                Destroy enemy tanks and avoid their fire
+            </div>
+            <div class="control-item">
+                You have 3 lives - use them wisely!
+            </div>
+            <div class="control-item" style="color: #ffaa00; margin-top: 15px;">
+                💡 Tip: Destroy walls to find safe spots and surprise enemies!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 800;
+        canvas.height = 600;
+
+        const GAME_WIDTH = canvas.width;
+        const GAME_HEIGHT = canvas.height;
+        const TILE_SIZE = 40;
+
+        let gameState = 'start';
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let enemiesKilled = 0;
+
+        const keys = {};
+        let lastShotTime = 0;
+        const SHOT_COOLDOWN = 200;
+
+        const colors = {
+            player: '#00ff00',
+            enemy: '#ff0000',
+            bullet: '#ffff00',
+            wall: '#888888',
+            brick: '#ff9900',
+            steel: '#aaaaaa',
+            background: '#1a1a1a'
+        };
+
+        class Tank {
+            constructor(x, y, isPlayer = false) {
+                this.x = x;
+                this.y = y;
+                this.width = 32;
+                this.height = 32;
+                this.speed = isPlayer ? 2.5 : 1.5;
+                this.isPlayer = isPlayer;
+                this.direction = 0;
+                this.nextDirection = 0;
+                this.health = 1;
+                this.color = isPlayer ? colors.player : colors.enemy;
+                this.shootCooldown = 0;
+                this.lastX = x;
+                this.lastY = y;
+            }
+
+            update(obstacles = []) {
+                this.shootCooldown -= 1;
+
+                if (this.nextDirection !== this.direction) {
+                    if (this.canMove(this.nextDirection, obstacles)) {
+                        this.direction = this.nextDirection;
+                    }
+                }
+
+                if (this.canMove(this.direction, obstacles)) {
+                    this.lastX = this.x;
+                    this.lastY = this.y;
+                    
+                    if (this.direction === 0) this.y -= this.speed;
+                    else if (this.direction === 1) this.x += this.speed;
+                    else if (this.direction === 2) this.y += this.speed;
+                    else if (this.direction === 3) this.x -= this.speed;
+                }
+
+                if (!this.isPlayer && gameState === 'playing') {
+                    if (Math.random() < 0.02) {
+                        this.nextDirection = Math.floor(Math.random() * 4);
+                    }
+                    if (Math.random() < 0.05 && this.shootCooldown <= 0) {
+                        this.shoot();
+                    }
+                }
+            }
+
+            canMove(direction, obstacles) {
+                let newX = this.x;
+                let newY = this.y;
+
+                if (direction === 0) newY -= this.speed;
+                else if (direction === 1) newX += this.speed;
+                else if (direction === 2) newY += this.speed;
+                else if (direction === 3) newX -= this.speed;
+
+                if (newX < 0 || newX + this.width > GAME_WIDTH ||
+                    newY < 0 || newY + this.height > GAME_HEIGHT) {
+                    return false;
+                }
+
+                for (let obstacle of obstacles) {
+                    if (this.collidesWith(newX, newY, obstacle)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            collidesWith(x, y, obstacle) {
+                return !(x + this.width < obstacle.x ||
+                         x > obstacle.x + obstacle.width ||
+                         y + this.height < obstacle.y ||
+                         y > obstacle.y + obstacle.height);
+            }
+
+            shoot() {
+                this.shootCooldown = 20;
+                let bulletX = this.x + this.width / 2 - 2;
+                let bulletY = this.y + this.height / 2 - 2;
+                bullets.push(new Bullet(bulletX, bulletY, this.direction, this.isPlayer));
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                ctx.fillStyle = '#ffffff';
+                const barrelLength = 16;
+                const barrelX = this.x + this.width / 2;
+                const barrelY = this.y + this.height / 2;
+
+                if (this.direction === 0) ctx.fillRect(barrelX - 2, barrelY - barrelLength, 4, barrelLength);
+                else if (this.direction === 1) ctx.fillRect(barrelX, barrelY - 2, barrelLength, 4);
+                else if (this.direction === 2) ctx.fillRect(barrelX - 2, barrelY, 4, barrelLength);
+                else if (this.direction === 3) ctx.fillRect(barrelX - barrelLength, barrelY - 2, barrelLength, 4);
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, direction, isPlayerBullet) {
+                this.x = x;
+                this.y = y;
+                this.width = 4;
+                this.height = 4;
+                this.speed = 4;
+                this.direction = direction;
+                this.isPlayerBullet = isPlayerBullet;
+                this.lifetime = 0;
+            }
+
+            update() {
+                if (this.direction === 0) this.y -= this.speed;
+                else if (this.direction === 1) this.x += this.speed;
+                else if (this.direction === 2) this.y += this.speed;
+                else if (this.direction === 3) this.x -= this.speed;
+
+                this.lifetime++;
+            }
+
+            isOutOfBounds() {
+                return this.x < 0 || this.x > GAME_WIDTH || this.y < 0 || this.y > GAME_HEIGHT || this.lifetime > 300;
+            }
+
+            draw() {
+                ctx.fillStyle = colors.bullet;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        class Obstacle {
+            constructor(x, y, width, height, type = 'brick') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.type = type;
+                this.health = type === 'brick' ? 1 : 100;
+            }
+
+            damage(amount = 1) {
+                this.health -= amount;
+            }
+
+            draw() {
+                if (this.health <= 0) return;
+
+                ctx.fillStyle = this.type === 'brick' ? colors.brick : colors.steel;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                if (this.type === 'brick') {
+                    ctx.strokeStyle = '#cc7700';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                }
+            }
+
+            isAlive() {
+                return this.health > 0;
+            }
+        }
+
+        let playerTank = null;
+        let enemyTanks = [];
+        let bullets = [];
+        let obstacles = [];
+
+        function initializeGame() {
+            playerTank = new Tank(GAME_WIDTH / 2 - 16, GAME_HEIGHT - 80, true);
+            enemyTanks = [];
+            bullets = [];
+            obstacles = [];
+
+            const enemyCount = Math.min(2 + level, 5);
+            for (let i = 0; i < enemyCount; i++) {
+                let x, y, valid;
+                do {
+                    valid = true;
+                    x = Math.random() * (GAME_WIDTH - 100);
+                    y = Math.random() * (GAME_HEIGHT / 3);
+
+                    if (Math.sqrt((x - playerTank.x) ** 2 + (y - playerTank.y) ** 2) < 150) {
+                        valid = false;
+                    }
+                } while (!valid);
+
+                enemyTanks.push(new Tank(x, y, false));
+            }
+
+            generateObstacles();
+            updateHUD();
+        }
+
+        function generateObstacles() {
+            const patterns = [
+                { x: 150, y: 150, w: 40, h: 40, type: 'brick' },
+                { x: 600, y: 150, w: 40, h: 40, type: 'brick' },
+                { x: 400, y: 300, w: 80, h: 20, type: 'brick' },
+                { x: 100, y: 400, w: 20, h: 100, type: 'brick' },
+                { x: 680, y: 400, w: 20, h: 100, type: 'brick' },
+                { x: 350, y: 450, w: 100, h: 20, type: 'brick' },
+            ];
+
+            for (let pattern of patterns) {
+                obstacles.push(new Obstacle(pattern.x, pattern.y, pattern.w, pattern.h, pattern.type));
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('level').textContent = level;
+            document.getElementById('enemies').textContent = enemyTanks.length;
+        }
+
+        function checkCollisions() {
+            for (let bullet of bullets) {
+                for (let tank of enemyTanks) {
+                    if (bullet.isPlayerBullet &&
+                        bullet.x < tank.x + tank.width &&
+                        bullet.x + bullet.width > tank.x &&
+                        bullet.y < tank.y + tank.height &&
+                        bullet.y + bullet.height > tank.y) {
+
+                        tank.health -= 1;
+                        const index = bullets.indexOf(bullet);
+                        if (index > -1) bullets.splice(index, 1);
+
+                        if (tank.health <= 0) {
+                            const tankIndex = enemyTanks.indexOf(tank);
+                            if (tankIndex > -1) enemyTanks.splice(tankIndex, 1);
+                            score += 100;
+                            enemiesKilled++;
+                        }
+                        return;
+                    }
+                }
+
+                for (let obstacle of obstacles) {
+                    if (obstacle.isAlive() &&
+                        bullet.x < obstacle.x + obstacle.width &&
+                        bullet.x + bullet.width > obstacle.x &&
+                        bullet.y < obstacle.y + obstacle.height &&
+                        bullet.y + bullet.height > obstacle.y) {
+
+                        obstacle.damage(1);
+                        const index = bullets.indexOf(bullet);
+                        if (index > -1) bullets.splice(index, 1);
+                        return;
+                    }
+                }
+
+                if (!bullet.isPlayerBullet &&
+                    bullet.x < playerTank.x + playerTank.width &&
+                    bullet.x + bullet.width > playerTank.x &&
+                    bullet.y < playerTank.y + playerTank.height &&
+                    bullet.y + bullet.height > playerTank.y) {
+
+                    lives--;
+                    const index = bullets.indexOf(bullet);
+                    if (index > -1) bullets.splice(index, 1);
+
+                    if (lives <= 0) {
+                        endGame();
+                    } else {
+                        playerTank = new Tank(GAME_WIDTH / 2 - 16, GAME_HEIGHT - 80, true);
+                    }
+                    return;
+                }
+            }
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+
+            playerTank.nextDirection = -1;
+            if (keys['ArrowUp'] || keys['w']) playerTank.nextDirection = 0;
+            else if (keys['ArrowDown'] || keys['s']) playerTank.nextDirection = 2;
+            if (keys['ArrowLeft'] || keys['a']) playerTank.nextDirection = 3;
+            else if (keys['ArrowRight'] || keys['d']) playerTank.nextDirection = 1;
+
+            const validObstacles = obstacles.filter(o => o.isAlive());
+            playerTank.update(validObstacles);
+
+            for (let enemy of enemyTanks) {
+                enemy.update(validObstacles);
+            }
+
+            for (let bullet of bullets) {
+                bullet.update();
+            }
+
+            bullets = bullets.filter(b => !b.isOutOfBounds());
+
+            checkCollisions();
+
+            if (enemyTanks.length === 0) {
+                level++;
+                initializeGame();
+                score += 500;
+            }
+
+            updateHUD();
+        }
+
+        function draw() {
+            ctx.fillStyle = colors.background;
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            for (let obstacle of obstacles) {
+                obstacle.draw();
+            }
+
+            playerTank.draw();
+
+            for (let enemy of enemyTanks) {
+                enemy.draw();
+            }
+
+            for (let bullet of bullets) {
+                bullet.draw();
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            gameState = 'gameOver';
+            document.getElementById('gameOverOverlay').classList.add('show');
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('enemiesKilled').textContent = enemiesKilled;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (gameState === 'start') {
+                    gameState = 'playing';
+                    document.getElementById('startOverlay').classList.add('hidden');
+                } else if (gameState === 'playing') {
+                    const now = Date.now();
+                    if (now - lastShotTime > SHOT_COOLDOWN) {
+                        playerTank.shoot();
+                        lastShotTime = now;
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (gameState === 'start') {
+                gameState = 'playing';
+                document.getElementById('startOverlay').classList.add('hidden');
+            } else if (gameState === 'playing') {
+                const now = Date.now();
+                if (now - lastShotTime > SHOT_COOLDOWN) {
+                    playerTank.shoot();
+                    lastShotTime = now;
+                }
+            }
+        });
+
+        initializeGame();
+        gameLoop();
+    </script>
+</body>
+</html>
